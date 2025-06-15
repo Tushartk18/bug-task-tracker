@@ -38,3 +38,6 @@ Dashboards
 
  🌐 Live Demo
  https://bug-task-tracker-beta.vercel.app/login
+ 
+ Video Demo:
+ https://drive.google.com/file/d/1thyldHkKpeZbGMt4Js29JuXuPjTFbp7Q/view?usp=sharing
