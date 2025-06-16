@@ -8,9 +8,13 @@ import { TaskCard } from '@/components/TaskCard';
 import { TaskForm } from '@/components/TaskForm';
 import { TimeTrackingDialog } from '@/components/TimeTrackingDialog';
 import { TaskFilters, TaskFilterState } from '@/components/TaskFilters';
+import { TaskAnalyticsChart } from '@/components/TaskAnalyticsChart';
+import { ApprovalQueue } from '@/components/ApprovalQueue';
+import { TeamPerformanceChart } from '@/components/TeamPerformanceChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   getTasks, 
   updateTask, 
@@ -26,7 +30,8 @@ import {
   CheckCircle, 
   AlertCircle,
   Users,
-  BarChart3
+  BarChart3,
+  PieChart
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -37,6 +42,7 @@ export default function DashboardPage() {
   const [showTimeTracking, setShowTimeTracking] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [trackingTask, setTrackingTask] = useState<Task | null>(null);
+  const [activeTab, setActiveTab] = useState('tasks');
   const [filters, setFilters] = useState<TaskFilterState>({
     search: '',
     status: 'all',
@@ -182,7 +188,7 @@ export default function DashboardPage() {
               </h1>
               <p className="text-muted-foreground">
                 {user?.role === 'manager' 
-                  ? 'Overview of all team tasks and approvals' 
+                  ? 'Overview of all team tasks, analytics, and approvals' 
                   : 'Manage your assigned tasks and track your time'
                 }
               </p>
@@ -249,60 +255,127 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Filters */}
-          <TaskFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            tasks={tasks}
-          />
-
-          {/* Tasks Grid */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">
-                Tasks ({filteredTasks.length})
-              </h2>
-              
-              {user?.role === 'manager' && analytics.pendingApprovalTasks > 0 && (
-                <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                  {analytics.pendingApprovalTasks} pending approval
-                </Badge>
+          {/* Main Content Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="tasks" className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4" />
+                <span>Tasks</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center space-x-2">
+                <BarChart3 className="w-4 h-4" />
+                <span>Analytics</span>
+              </TabsTrigger>
+              {user?.role === 'manager' && (
+                <>
+                  <TabsTrigger value="approvals" className="flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Approvals</span>
+                    {analytics.pendingApprovalTasks > 0 && (
+                      <Badge variant="secondary" className="ml-1 bg-orange-100 text-orange-800">
+                        {analytics.pendingApprovalTasks}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="team" className="flex items-center space-x-2">
+                    <Users className="w-4 h-4" />
+                    <span>Team</span>
+                  </TabsTrigger>
+                </>
               )}
-            </div>
+              {user?.role === 'developer' && (
+                <TabsTrigger value="my-analytics" className="flex items-center space-x-2">
+                  <PieChart className="w-4 h-4" />
+                  <span>My Analytics</span>
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-            {filteredTasks.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <CheckCircle className="h-16 w-16 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No tasks found</h3>
-                  <p className="text-muted-foreground text-center mb-4">
-                    {filters.search || filters.status !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
-                      ? 'Try adjusting your filters or search terms'
-                      : 'Create your first task to get started'
-                    }
-                  </p>
-                  <Button onClick={() => setShowTaskForm(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Task
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={setEditingTask}
-                    onDelete={handleDeleteTask}
-                    onStatusChange={handleStatusChange}
-                    onTimeTrack={handleTimeTrack}
-                    userRole={user?.role}
-                  />
-                ))}
+            {/* Tasks Tab */}
+            <TabsContent value="tasks" className="space-y-6">
+              {/* Filters */}
+              <TaskFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                tasks={tasks}
+              />
+
+              {/* Tasks Grid */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">
+                    Tasks ({filteredTasks.length})
+                  </h2>
+                  
+                  {user?.role === 'manager' && analytics.pendingApprovalTasks > 0 && (
+                    <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                      {analytics.pendingApprovalTasks} pending approval
+                    </Badge>
+                  )}
+                </div>
+
+                {filteredTasks.length === 0 ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-16">
+                      <CheckCircle className="h-16 w-16 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No tasks found</h3>
+                      <p className="text-muted-foreground text-center mb-4">
+                        {filters.search || filters.status !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
+                          ? 'Try adjusting your filters or search terms'
+                          : 'Create your first task to get started'
+                        }
+                      </p>
+                      <Button onClick={() => setShowTaskForm(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Task
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {filteredTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onEdit={setEditingTask}
+                        onDelete={handleDeleteTask}
+                        onStatusChange={handleStatusChange}
+                        onTimeTrack={handleTimeTrack}
+                        userRole={user?.role}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics" className="space-y-6">
+              <TaskAnalyticsChart userRole={user?.role} userId={user?.id} />
+            </TabsContent>
+
+            {/* Developer Analytics Tab */}
+            {user?.role === 'developer' && (
+              <TabsContent value="my-analytics" className="space-y-6">
+                <TaskAnalyticsChart userRole="developer" userId={user.id} />
+              </TabsContent>
             )}
-          </div>
+
+            {/* Manager-only tabs */}
+            {user?.role === 'manager' && (
+              <>
+                {/* Approvals Tab */}
+                <TabsContent value="approvals" className="space-y-6">
+                  <ApprovalQueue onTaskUpdate={loadTasks} />
+                </TabsContent>
+
+                {/* Team Tab */}
+                <TabsContent value="team" className="space-y-6">
+                  <TeamPerformanceChart />
+                </TabsContent>
+              </>
+            )}
+          </Tabs>
         </div>
 
         {/* Task Form Dialog */}
